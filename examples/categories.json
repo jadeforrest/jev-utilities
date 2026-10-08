@@ -1,0 +1,10 @@
+{
+  "question": "Which kind of support request is this?",
+  "categories": {
+    "billing": "Questions about invoices, charges, refunds or payment methods.",
+    "bug": "Something in the product is broken or behaves unexpectedly.",
+    "feature_request": "Asks for something the product doesn't do yet.",
+    "other": "Anything that fits none of the other categories."
+  },
+  "minConfidence": 0.6
+}

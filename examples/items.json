@@ -1,0 +1,4 @@
+[
+  { "id": 1, "state": "I was charged twice this month" },
+  { "id": 2, "state": { "subject": "Export button does nothing", "body": "Clicking Export on the reports page shows a spinner forever." } }
+]
