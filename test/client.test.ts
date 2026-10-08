@@ -108,3 +108,15 @@ test('jevCost bills input at $0.042 per million tokens', () => {
   assert.equal(jevCost(0), 0);
   assert.ok(Math.abs(jevCost(1_000_000) - 0.042) < 1e-12);
 });
+
+test('DEFAULT_ENDPOINT is the TypeSafe systemone URL', () => {
+  assert.equal(DEFAULT_ENDPOINT, 'https://api.typesafe.ai/v1/systemone');
+});
+
+test('error messages are named and truncate long bodies', async () => {
+  const err = new JevHttpError(500, 'x'.repeat(1000));
+  assert.equal(err.name, 'JevHttpError');
+  assert.equal(err.message, `TypeSafe API 500: ${'x'.repeat(300)}`);
+  const raw = { type: 'choice', choice: 'nope', pad: 'y'.repeat(1000) };
+  assert.throws(() => parseChoiceAnswer(raw, question), (e: Error) => e.message.length <= 'Jev returned an invalid choice answer: '.length + 300);
+});

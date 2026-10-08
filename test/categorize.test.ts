@@ -129,3 +129,12 @@ test('summarize lists every label, including unused ones', () => {
   const s = summarize(spec, [decide(1, { type: 'choice', choice: 'b', probabilities: {}, confidence: 1 }, 0.5)]);
   assert.deepEqual(s, { total: 1, labeled: 1, needsReview: 0, failed: 0, byLabel: { a: 0, b: 1, c: 0 } });
 });
+
+test('an answer exactly at the threshold is accepted', () => {
+  assert.equal(decide(1, { type: 'choice', choice: 'a', probabilities: {}, confidence: 0.6 }, 0.6).label, 'a');
+});
+
+test('parseThreshold rejects whitespace-only strings and names the field', () => {
+  assert.throws(() => parseThreshold('   ', 'minConfidence'), /^Error: minConfidence must be/);
+  assert.throws(() => parseSpec({ question: 'Q', categories: { x: 'X', y: 'Y' }, minConfidence: 'x' }), /^Error: minConfidence must be/);
+});

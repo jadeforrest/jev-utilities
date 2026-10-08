@@ -63,3 +63,10 @@ test('property: succeeds iff the failures before success fit within the attempt 
     }
   ));
 });
+
+test('realSleep resolves after the delay', async () => {
+  const { realSleep } = await import('../src/retry');
+  const t = Date.now();
+  await realSleep(5);
+  assert.ok(Date.now() - t >= 4);
+});

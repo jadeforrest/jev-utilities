@@ -126,3 +126,67 @@ test('estimateTokens grows with item size', () => {
   assert.ok(big >= small + 100);
   assert.equal(estimateTokens(spec, []), 0);
 });
+
+test('unreadable files are named in the error', async () => {
+  const f = fakeDeps();
+  assert.equal(await runCli(['--categories', 'nope.json', '--input', 'items.json'], f.deps), 1);
+  assert.match(f.err.join(''), /could not read categories file nope\.json: ENOENT/);
+  const g = fakeDeps();
+  assert.equal(await runCli(['--categories', 'cats.json', '--input', 'nope.json'], g.deps), 1);
+  assert.match(g.err.join(''), /could not read input file nope\.json/);
+});
+
+test('--concurrency limits calls in flight; default runs them in parallel', async () => {
+  const peakFor = async (extra: string[]) => {
+    const f = fakeDeps({ env: { TYPESAFE_API_KEY: 'k' } });
+    let inFlight = 0;
+    let peak = 0;
+    f.deps.makeClient = () => ({
+      async systemOne() {
+        peak = Math.max(peak, ++inFlight);
+        await new Promise((r) => setTimeout(r, 5));
+        inFlight--;
+        return { model: 'm', answers: { [QUESTION_KEY]: { type: 'choice', choice: 'a', probabilities: {}, confidence: 1 } }, usage: { inputTokens: 0, outputTokens: 0, costUsd: 0 } };
+      },
+    });
+    assert.equal(await runCli([...base, ...extra], f.deps), 0);
+    return peak;
+  };
+  assert.equal(await peakFor(['--concurrency', '1']), 1);
+  assert.equal(await peakFor([]), 2);
+});
+
+test('reports progress every 25 items and at the end', async () => {
+  files['many.json'] = JSON.stringify(Array.from({ length: 30 }, (_, i) => ({ id: i, state: 'hi' })));
+  const f = fakeDeps({ env: { TYPESAFE_API_KEY: 'k' } });
+  assert.equal(await runCli(['--categories', 'cats.json', '--input', 'many.json'], f.deps), 0);
+  assert.deepEqual(f.err.filter((s) => /^ {2}\d+\/30\n$/.test(s)), ['  25/30\n', '  30/30\n']);
+});
+
+test('an empty input exits 0, not "all failed"', async () => {
+  files['empty.json'] = '[]';
+  const f = fakeDeps({ env: { TYPESAFE_API_KEY: 'k' } });
+  assert.equal(await runCli(['--categories', 'cats.json', '--input', 'empty.json'], f.deps), 0);
+});
+
+test('estimateTokens is about a quarter of the characters', () => {
+  const spec = { question: 'Q', categories: { a: 'A', b: 'B' } };
+  const n = estimateTokens(spec, [{ id: 1, state: 'x'.repeat(4000) }]);
+  assert.ok(n >= 1000 && n < 1100, String(n));
+});
+
+test('the executable entry point runs with real I/O and sets the exit code', () => {
+  const { spawnSync } = require('node:child_process') as typeof import('node:child_process');
+  const path = require('node:path') as typeof import('node:path');
+  const tsx = path.join(__dirname, '..', 'node_modules', '.bin', 'tsx');
+  const cli = path.join(__dirname, '..', 'src', 'cli.ts');
+  const ex = path.join(__dirname, '..', 'examples');
+  const help = spawnSync(tsx, [cli, '--help'], { encoding: 'utf8' });
+  assert.equal(help.status, 0);
+  assert.match(help.stdout, /Usage: jev-categorize/);
+  const dry = spawnSync(tsx, [cli, '--categories', `${ex}/categories.json`, '--input', `${ex}/items.json`, '--dry-run'], { encoding: 'utf8' });
+  assert.equal(dry.status, 0);
+  assert.equal(JSON.parse(dry.stdout).state, 'I was charged twice this month');
+  assert.match(dry.stderr, /dry run: 2 item/);
+  assert.equal(spawnSync(tsx, [cli], { encoding: 'utf8' }).status, 1);
+});
