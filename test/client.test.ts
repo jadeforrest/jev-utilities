@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fc from 'fast-check';
-import { JevClient, JevHttpError, JevChoiceQuestion, parseChoiceAnswer, jevCost, DEFAULT_ENDPOINT } from '../src/client';
+import { JevClient, JevHttpError, JevChoiceQuestion, parseChoiceAnswer, jevCost, isJevModel, DEFAULT_ENDPOINT } from '../src/client';
 import { scriptedFetch, noSleep } from './helpers';
 
 const question: JevChoiceQuestion = { type: 'choice', instructions: 'Which?', criteria: { work: 'w', personal: 'p' } };
@@ -119,4 +119,15 @@ test('error messages are named and truncate long bodies', async () => {
   assert.equal(err.message, `TypeSafe API 500: ${'x'.repeat(300)}`);
   const raw = { type: 'choice', choice: 'nope', pad: 'y'.repeat(1000) };
   assert.throws(() => parseChoiceAnswer(raw, question), (e: Error) => e.message.length <= 'Jev returned an invalid choice answer: '.length + 300);
+});
+
+test('isJevModel matches jev ids by prefix only', () => {
+  for (const m of ['jev', 'jev-latest', 'jev-1.13.0']) assert.equal(isJevModel(m), true, m);
+  for (const m of ['jevx', 'claude-jev', 'claude-haiku-4-5', '', 'JEV-latest']) assert.equal(isJevModel(m), false, m);
+});
+
+test('a question with no answer in the response throws', async () => {
+  const { fetch } = scriptedFetch([{ status: 200, body: { answers: {} } }]);
+  const client = new JevClient('k', { fetch, sleep: noSleep });
+  await assert.rejects(client.systemOne({ state: 's', questions: { label: question } }), /invalid choice answer/);
 });

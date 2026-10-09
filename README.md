@@ -10,8 +10,10 @@ The point of this package is to make a categorization job a two-file affair, and
 threshold comes back with `label: null`, Jev's best guess in `suggestion`, and
 `needsReview: true`.
 
-The client is ported from `~/Developer/email-narrative/src/llm/jev.ts` (same retry
-policy and answer validation).
+This package is the single home of the Jev client: `~/Developer/email-narrative`
+depends on it (`"jev-utilities": "file:../jev-utilities"`) and no longer has its own
+copy, so retry and validation fixes land once. Run `npm run build` here after changing
+`src/`; email-narrative rebuilds it automatically before its own build, tests and runs.
 
 ## Setup
 

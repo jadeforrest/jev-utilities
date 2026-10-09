@@ -5,3 +5,4 @@ reports/
 .stryker-tmp/
 .env
 *.local.json
+*~

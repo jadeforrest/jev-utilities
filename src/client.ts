@@ -4,7 +4,7 @@ import { withRetry, realSleep, Sleep } from './retry';
  * Client for TypeSafe's Jev, a "System One" decision model
  * (https://docs.typesafe.ai). Jev doesn't generate text: it answers typed
  * questions about a piece of state with a probability distribution over the
- * options it was given. Ported from email-narrative's src/llm/jev.ts.
+ * options it was given. email-narrative consumes this package (it used to carry its own copy).
  *
  * Talks to the HTTP API with `fetch` rather than `@typesafe-ai/sdk` — one
  * endpoint, and an injected fetch keeps the test mock surface to one function.
@@ -18,6 +18,15 @@ export const DEFAULT_MODEL = 'jev-latest';
  * jev-preview, jev-1.x) shares the price.
  */
 export const JEV_USD_PER_MTOK = 0.042;
+
+/**
+ * True for model ids that name a Jev model (`jev`, `jev-latest`, `jev-1.13.0`)
+ * rather than a text LLM, so callers can route by id. A bare prefix such as
+ * `jevx` or `claude-jev` does not match.
+ */
+export function isJevModel(model: string): boolean {
+  return /^jev(-|$)/.test(model);
+}
 
 /** A choice question: pick one key of `criteria` (key → description). */
 export interface JevChoiceQuestion {
