@@ -115,3 +115,7 @@ npm test               # node:test + fast-check property tests
 npm run coverage       # c8
 npm run test:mutation  # StrykerJS — slow pass, run after merging
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE).
