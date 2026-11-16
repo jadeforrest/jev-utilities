@@ -7,8 +7,13 @@
   "bin": {
     "jev-categorize": "dist/cli.js"
   },
+  "files": [
+    "dist",
+    "bin"
+  ],
   "scripts": {
     "build": "tsc",
+    "prepare": "tsc",
     "categorize": "tsx src/cli.ts",
     "test": "tsx --test test/*.test.ts",
     "coverage": "c8 --reporter=text --reporter=json-summary --include 'src/**' tsx --test test/*.test.ts",
