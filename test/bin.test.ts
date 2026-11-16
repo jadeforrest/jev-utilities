@@ -76,6 +76,13 @@ for (const [alias, versions, want] of [
   });
 }
 
+test('passes every argument through intact, spaces and empties included', () => {
+  const s = scratch();
+  const node = path.join(s.root, 'argcount');
+  fs.writeFileSync(node, '#!/bin/sh\nprintf "%s|" "$@"\n', { mode: 0o755 });
+  assert.equal(run(s.bin, ['a', 'b c', ''], { JEV_NODE: node }).out, `${s.cli}|a|b c||`);
+});
+
 test('nvm under HOME is the default NVM_DIR', () => {
   const s = scratch();
   const dir = nvm(s.root, ['v22.1.0'], '22', '.nvm');
@@ -136,6 +143,17 @@ test('install.sh runs npm ci when dependencies are missing', () => {
   const s = scratch();
   fs.rmdirSync(path.join(s.pkg, 'node_modules'));
   assert.match(install(s).out, /npm --prefix \S+ ci/);
+});
+
+test('install.sh never replaces a foreign symlink, even a dangling one', () => {
+  const s = scratch();
+  const dest = path.join(s.root, 'prefix/bin/jev-categorize');
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.symlinkSync(path.join(s.root, 'gone'), dest);
+  const r = install(s);
+  assert.equal(r.code, 1);
+  assert.match(r.err, /refusing to replace/);
+  assert.equal(fs.readlinkSync(dest), path.join(s.root, 'gone'));
 });
 
 test('install.sh never replaces a foreign file and rejects unknown flags', () => {
