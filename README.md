@@ -18,9 +18,15 @@ copy, so retry and validation fixes land once. Run `npm run build` here after ch
 ## Setup
 
 ```sh
-npm install
-npm run build        # dist/cli.js; `npm link` puts jev-categorize on PATH
+./install.sh         # npm ci if needed, build, link ~/.local/bin/jev-categorize
+./install.sh --uninstall
 ```
+
+The link points at `bin/jev-categorize`, which follows symlinks and finds node itself
+(`$JEV_NODE`, else node on PATH, else nvm's default version), so it also runs under
+launchd's minimal PATH. It never replaces a file it didn't create; set `PREFIX` to
+install somewhere other than `~/.local`. After changing `src/`, `npm run build` is
+enough: the link stays live.
 
 Set `TYPESAFE_API_KEY`, or pass `--env-file` pointing at a dotenv file containing it.
 

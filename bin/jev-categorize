@@ -1,0 +1,39 @@
+#!/bin/bash
+# Runs the built CLI (dist/cli.js) under node. Follows symlinks, so it can be
+# installed as ~/.local/bin/jev-categorize (see install.sh).
+#
+# Finds node itself, because launchd's PATH has no node: $JEV_NODE if set, else
+# node on PATH, else nvm's default -- the newest installed version matching
+# $NVM_DIR/alias/default, or the newest installed one if that alias isn't a
+# version number (e.g. "lts/*").
+src="${BASH_SOURCE[0]}"
+while [ -L "$src" ]; do
+    dir="$(cd -P "$(dirname "$src")" && pwd)"
+    src="$(readlink "$src")"
+    case "$src" in /*) ;; *) src="$dir/$src" ;; esac
+done
+cli="$(cd -P "$(dirname "$src")/.." && pwd)/dist/cli.js"
+
+nvm_default_node() {
+    local nvm="${NVM_DIR:-$HOME/.nvm}" want pattern newest
+    want="$(cat "$nvm/alias/default" 2>/dev/null)"
+    want="${want#v}"
+    case "$want" in
+        [0-9]*) pattern="^${want//./\\.}(\\.|$)" ;;
+        *) pattern="^[0-9]" ;;
+    esac
+    newest="$(ls -1 "$nvm/versions/node" 2>/dev/null | sed 's/^v//' | grep -E "$pattern" \
+        | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)"
+    [ -n "$newest" ] && echo "$nvm/versions/node/v$newest/bin/node"
+}
+
+node="${JEV_NODE:-$(command -v node || nvm_default_node)}"
+if [ -z "$node" ] || [ ! -x "$node" ]; then
+    echo "jev-categorize: no node found (set JEV_NODE, put node on PATH, or install one with nvm)" >&2
+    exit 127
+fi
+if [ ! -f "$cli" ]; then
+    echo "jev-categorize: $cli is missing -- run install.sh (or npm run build) in jev-utilities" >&2
+    exit 127
+fi
+exec "$node" "$cli" "$@"
